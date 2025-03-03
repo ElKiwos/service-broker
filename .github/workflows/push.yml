@@ -2,111 +2,111 @@ name: Build and Test
 on:
   pull_request:
     branches:
-    - '*'
+      - "*"
     tags-ignore:
-    - '*'
+      - "*"
 jobs:
   license:
     name: License
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        path: github.com/couchbase/service-broker
-    - name: License
-      run: make license
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          path: github.com/ElKiwos/service-broker
+      - name: License
+        run: make license
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        path: github.com/couchbase/service-broker
-    - name: Configure Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '^1.16.3'
-    - name: Build
-      run: make
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          path: github.com/ElKiwos/service-broker
+      - name: Configure Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.3"
+      - name: Build
+        run: make
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        path: github.com/couchbase/service-broker
-    - name: Configure Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '^1.16.3'
-    - name: Test
-      run: make test
-    - name: Make Code Coverage
-      run: go tool cover -html /tmp/cover.out -o /tmp/cover.html
-    - name: Upload Code Coverage Atrifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: code-coverage
-        path: /tmp/cover.html
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          path: github.com/ElKiwos/service-broker
+      - name: Configure Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.3"
+      - name: Test
+        run: make test
+      - name: Make Code Coverage
+        run: go tool cover -html /tmp/cover.out -o /tmp/cover.html
+      - name: Upload Code Coverage Atrifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: code-coverage
+          path: /tmp/cover.html
   test-acceptance:
     name: Acceptance Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
         versions:
-        - v1.18.8
-        - v1.19.1
-        - v1.20.0
-        - v1.21.1
+          - v1.18.8
+          - v1.19.1
+          - v1.20.0
+          - v1.21.1
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        path: github.com/couchbase/service-broker
-    - name: Configure Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '^1.16.3'
-    - name: Setup Kind
-      uses: engineerd/setup-kind@v0.5.0
-      with:
-        version: v0.11.0
-        image: kindest/node:${{ matrix.versions }}
-    - name: Build Images
-      run: |
-        make container
-        kind load docker-image couchbase/service-broker:latest
-    - name: Install Helm
-      uses: azure/setup-helm@v1
-    - name: Install Service Catalog
-      run: |
-        helm install --wait --repo https://kubernetes-sigs.github.io/service-catalog --namespace default catalog catalog --version 0.3.1
-    - name: Acceptance Test
-      run: make acceptance
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          path: github.com/ElKiwos/service-broker
+      - name: Configure Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.3"
+      - name: Setup Kind
+        uses: engineerd/setup-kind@v0.5.0
+        with:
+          version: v0.11.0
+          image: kindest/node:${{ matrix.versions }}
+      - name: Build Images
+        run: |
+          make container
+          kind load docker-image couchbase/service-broker:latest
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+      - name: Install Service Catalog
+        run: |
+          helm install --wait --repo https://kubernetes-sigs.github.io/service-catalog --namespace default catalog catalog --version 0.3.1
+      - name: Acceptance Test
+        run: make acceptance
   release:
     name: Archive
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        path: github.com/couchbase/service-broker
-    - name: Configure Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '^1.16.3'
-    - name: Build Archives
-      run: make archive -e DESTDIR=/tmp/archive
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          path: github.com/ElKiwos/service-broker
+      - name: Configure Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.3"
+      - name: Build Archives
+        run: make archive -e DESTDIR=/tmp/archive
   docs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        path: github.com/couchbase/service-broker
-    - name: Asciidoc Lint
-      run: make docs
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          path: github.com/ElKiwos/service-broker
+      - name: Asciidoc Lint
+        run: make docs

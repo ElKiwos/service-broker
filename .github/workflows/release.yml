@@ -2,108 +2,128 @@ name: Release
 on:
   push:
     branches-ignore:
-    - '*'
+      - "*"
     tags:
-    - '*'
+      - "*"
 jobs:
   build:
     name: Release
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        path: github.com/couchbase/service-broker
-    - name: Configure Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '^1.16.3'
-    # The release is triggered by pushing an annotated tag to the repository.
-    # First step is to extract the versioning information and make it available
-    # for other steps in the build pipeline.
-    - name: Constants
-      id: constants
-      run: |
-        VERSION=$(basename ${{ github.ref }})
-        APPLICATION=couchbase-service-broker
-        echo ::set-output name=version::${VERSION}
-        echo ::set-output name=archive-tgz::${APPLICATION}-${VERSION}-1.tar.gz
-        echo ::set-output name=archive-zip::${APPLICATION}-${VERSION}-1.zip
-        echo ::set-output name=archive-deb::${APPLICATION}_${VERSION}-1_amd64.deb
-        echo ::set-output name=archive-rpm::${APPLICATION}-${VERSION}-1.x86_64.rpm
-    # Make the binaries
-    - name: Build Binaries
-      run: make -e VERSION=${{ steps.constants.outputs.version }}
-    # Create container images
-    - name: Push Docker Images
-      uses: docker/build-push-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: couchbase/service-broker
-        tag_with_ref: true
-        tags: latest
+      - name: Checkout
+        uses: actions/checkout@v1
+        with:
+          path: github.com/couchbase/service-broker
+      - name: Configure Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.16.3"
+      # The release is triggered by pushing an annotated tag to the repository.
+      # First step is to extract the versioning information and make it available
+      # for other steps in the build pipeline.
+      - name: Constants
+        id: constants
+        run: |
+          VERSION=$(basename ${{ github.ref }})
+          APPLICATION=couchbase-service-broker
+          echo ::set-output name=version::${VERSION}
+          echo ::set-output name=archive-tgz::${APPLICATION}-${VERSION}-1.tar.gz
+          echo ::set-output name=archive-zip::${APPLICATION}-${VERSION}-1.zip
+          echo ::set-output name=archive-deb::${APPLICATION}_${VERSION}-1_amd64.deb
+          echo ::set-output name=archive-rpm::${APPLICATION}-${VERSION}-1.x86_64.rpm
+      # Make the binaries
+      - name: Build Binaries
+        run: make -e VERSION=${{ steps.constants.outputs.version }}
+      # Create container images
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: latest
+          tag_with_ref: true
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/arm64,linux/amd64
+          file: "Dockerfile"
+          build-args: |
+            KEA_VERSION=${{ env.KEA_VERSION }}
+            ALPINE_VERSION=${{ env.ALPINE_VERSION }}
+
+      # - name: Push Docker Images
+      #   uses: docker/build-push-action@v1
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+      #     repository: couchbase/service-broker
+      #     tag_with_ref: true
+      #     tags: latest
     # Install debhelper as it's not there by default, rpm is.
-    - name: Install Packages
-      run: |
-        sudo apt-get update
-        sudo apt-get -y install devscripts debhelper
-    # Build the DEB first as it will run the clean target and clear out the directory.
-    - name: Build Debian
-      run: make deb -e VERSION=${{ steps.constants.outputs.version }}
-    # Build the RPM.
-    - name: Build Red Hat
-      run: make rpm -e VERSION=${{ steps.constants.outputs.version }}
-    # Build the standard archives.
-    - name: Build Archive
-      run: make archive -e DESTDIR=/tmp/archive VERSION=${{ steps.constants.outputs.version }}
+    # - name: Install Packages
+    #   run: |
+    #     sudo apt-get update
+    #     sudo apt-get -y install devscripts debhelper
+    # # Build the DEB first as it will run the clean target and clear out the directory.
+    # - name: Build Debian
+    #   run: make deb -e VERSION=${{ steps.constants.outputs.version }}
+    # # Build the RPM.
+    # - name: Build Red Hat
+    #   run: make rpm -e VERSION=${{ steps.constants.outputs.version }}
+    # # Build the standard archives.
+    # - name: Build Archive
+    #   run: make archive -e DESTDIR=/tmp/archive VERSION=${{ steps.constants.outputs.version }}
     # Create a release for the version.
     # TODO: we could also have pre-releases triggered by some logic.
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@latest
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.constants.outputs.version }}
-        release_name: Version ${{ steps.constants.outputs.version }}
-        draft: false
-        prerelease: false
-    # Finally upload the TGZ and ZIP build artifacts to the release page for
-    # easy access.
-    - name: Upload TGZ Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.constants.outputs.archive-tgz }}
-        asset_name: ${{ steps.constants.outputs.archive-tgz }}
-        asset_content_type: application/gzip
-    - name: Upload ZIP Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.constants.outputs.archive-zip }}
-        asset_name: ${{ steps.constants.outputs.archive-zip }}
-        asset_content_type: application/zip
-    - name: Upload DEB Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.constants.outputs.archive-deb }}
-        asset_name: ${{ steps.constants.outputs.archive-deb }}
-        asset_content_type: application/vnd.debian.binary-package
-    - name: Upload RPM Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.constants.outputs.archive-rpm }}
-        asset_name: ${{ steps.constants.outputs.archive-rpm }}
-        asset_content_type: application/x-rpm
+    # - name: Create Release
+    #   id: create_release
+    #   uses: actions/create-release@latest
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     tag_name: ${{ steps.constants.outputs.version }}
+    #     release_name: Version ${{ steps.constants.outputs.version }}
+    #     draft: false
+    #     prerelease: false
+    # # Finally upload the TGZ and ZIP build artifacts to the release page for
+    # # easy access.
+    # - name: Upload TGZ Release Asset
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_path: ${{ steps.constants.outputs.archive-tgz }}
+    #     asset_name: ${{ steps.constants.outputs.archive-tgz }}
+    #     asset_content_type: application/gzip
+    # - name: Upload ZIP Release Asset
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_path: ${{ steps.constants.outputs.archive-zip }}
+    #     asset_name: ${{ steps.constants.outputs.archive-zip }}
+    #     asset_content_type: application/zip
+    # - name: Upload DEB Release Asset
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_path: ${{ steps.constants.outputs.archive-deb }}
+    #     asset_name: ${{ steps.constants.outputs.archive-deb }}
+    #     asset_content_type: application/vnd.debian.binary-package
+    # - name: Upload RPM Release Asset
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_path: ${{ steps.constants.outputs.archive-rpm }}
+    #     asset_name: ${{ steps.constants.outputs.archive-rpm }}
+    #     asset_content_type: application/x-rpm
