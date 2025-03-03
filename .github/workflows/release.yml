@@ -1,5 +1,6 @@
 name: Release
 on:
+  workflow_call:
   push:
     branches-ignore:
       - "*"
@@ -26,11 +27,11 @@ jobs:
         run: |
           VERSION=$(basename ${{ github.ref }})
           APPLICATION=couchbase-service-broker
-          echo ::set-output name=version::${VERSION}
-          echo ::set-output name=archive-tgz::${APPLICATION}-${VERSION}-1.tar.gz
-          echo ::set-output name=archive-zip::${APPLICATION}-${VERSION}-1.zip
-          echo ::set-output name=archive-deb::${APPLICATION}_${VERSION}-1_amd64.deb
-          echo ::set-output name=archive-rpm::${APPLICATION}-${VERSION}-1.x86_64.rpm
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "archive-tgz=${APPLICATION}-${VERSION}-1.tar.gz" >> $GITHUB_OUTPUT
+          echo "archive-zip=${APPLICATION}-${VERSION}-1.zip" >> $GITHUB_OUTPUT
+          echo "archive-deb=${APPLICATION}_${VERSION}-1_amd64.deb" >> $GITHUB_OUTPUT
+          echo "archive-rpm=${APPLICATION}-${VERSION}-1.x86_64.rpm" >> $GITHUB_OUTPUT
       # Make the binaries
       - name: Build Binaries
         run: make -e VERSION=${{ steps.constants.outputs.version }}
@@ -43,17 +44,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v6
         with:
           push: true
-          tags: latest
-          tag_with_ref: true
-          labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/arm64,linux/amd64
+          tags: latest,${{ steps.constants.outputs.version }}
+          platforms: linux/amd64
           file: "Dockerfile"
-          build-args: |
-            KEA_VERSION=${{ env.KEA_VERSION }}
-            ALPINE_VERSION=${{ env.ALPINE_VERSION }}
 
       # - name: Push Docker Images
       #   uses: docker/build-push-action@v1
