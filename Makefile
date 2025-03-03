@@ -23,7 +23,7 @@ VERSION = 0.0.0
 REVISION = 1
 
 # This is the go import path of the module and affects client code.
-IMPORT_PATH = github.com/couchbase/service-broker
+IMPORT_PATH = github.com/ElKiwos/service-broker
 
 # This is the docker image name to generate.  The tag is derived from the
 # VERSION variable.
@@ -133,7 +133,7 @@ INSTALL_TARGETS = $(INSTALL_SHARE_TARGETS) $(INSTALL_BIN_TARGETS)
 
 # This is the base directory to generate kubernetes API primitives from e.g.
 # clients and CRDs.
-GENAPIBASE = github.com/couchbase/service-broker/pkg/apis
+GENAPIBASE = github.com/ElKiwos/service-broker/pkg/apis
 
 # This is the list of APIs to generate clients for.
 GENAPIS = $(GENAPIBASE)/servicebroker/v1alpha1
@@ -196,7 +196,7 @@ lint: $(GENERATED_DIR)
 # The unit tests must pass for all code submissions, additionally code
 # coverage should be checked to ensure code submissions actually work.
 unit: $(GENERATED_DIR)
-	go test -v -race -cover -coverpkg github.com/couchbase/service-broker/pkg/... -coverprofile=$(COVER_FILE) ./test/unit
+	go test -v -race -cover -coverpkg github.com/ElKiwos/service-broker/pkg/... -coverprofile=$(COVER_FILE) ./test/unit
 
 # Acceptance testing builds a container and runs tests within Kubernetes.
 # This is higher performance than having to connect over the internet all
@@ -269,8 +269,8 @@ $(BROKER_BIN): $(GENERATED_DIR) $(SOURCE) $(DEPSRC)
 # The CRDs are auto generated and depend on the API source only.
 $(CRD_DIR)/%: $(APISRC)
 	@mkdir -p $(CRD_DIR)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0
-	$(HOME)/go/bin/controller-gen crd crd:crdVersions=v1 paths=./pkg/apis/... output:dir=$(CRD_DIR)
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
+	$(HOME)/go/bin/controller-gen crd:crdVersions=v1 paths=./pkg/apis/... output:dir=$(CRD_DIR)
 
 # The TGZ archive relies on the archive directory.
 $(ARCHIVE_TGZ): $(INSTALL_TARGETS)
