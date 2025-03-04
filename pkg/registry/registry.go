@@ -90,66 +90,64 @@ type keyPolicy struct {
 	write bool
 }
 
-var (
-	// keyPolicies defines whether users can modify managed keys.
-	keyPolicies = []keyPolicy{
-		{
-			name:  Namespace,
-			read:  true,
-			write: false,
-		},
-		{
-			name:  InstanceID,
-			read:  true,
-			write: false,
-		},
-		{
-			name:  ServiceID,
-			read:  true,
-			write: false,
-		},
-		{
-			name:  PlanID,
-			read:  true,
-			write: false,
-		},
-		{
-			name:  Context,
-			read:  false,
-			write: false,
-		},
-		{
-			name:  Parameters,
-			read:  false,
-			write: false,
-		},
-		{
-			name:  Operation,
-			read:  false,
-			write: false,
-		},
-		{
-			name:  OperationID,
-			read:  false,
-			write: false,
-		},
-		{
-			name:  OperationStatus,
-			read:  false,
-			write: false,
-		},
-		{
-			name:  DashboardURL,
-			read:  true,
-			write: true,
-		},
-		{
-			name:  Credentials,
-			read:  true,
-			write: true,
-		},
-	}
-)
+// keyPolicies defines whether users can modify managed keys.
+var keyPolicies = []keyPolicy{
+	{
+		name:  Namespace,
+		read:  true,
+		write: false,
+	},
+	{
+		name:  InstanceID,
+		read:  true,
+		write: false,
+	},
+	{
+		name:  ServiceID,
+		read:  true,
+		write: false,
+	},
+	{
+		name:  PlanID,
+		read:  true,
+		write: false,
+	},
+	{
+		name:  Context,
+		read:  true,
+		write: false,
+	},
+	{
+		name:  Parameters,
+		read:  false,
+		write: false,
+	},
+	{
+		name:  Operation,
+		read:  false,
+		write: false,
+	},
+	{
+		name:  OperationID,
+		read:  false,
+		write: false,
+	},
+	{
+		name:  OperationStatus,
+		read:  false,
+		write: false,
+	},
+	{
+		name:  DashboardURL,
+		read:  true,
+		write: true,
+	},
+	{
+		name:  Credentials,
+		read:  true,
+		write: true,
+	},
+}
 
 // findKeyPolicy looks up a defined key policy.
 func findKeyPolicy(name string) *keyPolicy {
