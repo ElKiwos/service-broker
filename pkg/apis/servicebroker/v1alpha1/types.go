@@ -271,6 +271,9 @@ type RegistryValue struct {
 type RegistryScope string
 
 const (
+	// RegistryScopeTenantPrefixed provisions the registry in a "tnt-" prefixed namespace according to the origin of the request.
+	RegistryScopeTenantPrefixed RegistryScope = "Prefixed"
+
 	// RegistryScopeExplicit provisions the registry where you tell it to.
 	RegistryScopeExplicit RegistryScope = "Explicit"
 
@@ -308,6 +311,16 @@ type ConfigurationBinding struct {
 	// "Explicit" mode, and specifies the exact namespace a service instance
 	// registry will be generated in.
 	RegistryNamespace string `json:"registryNamespace,omitempty"`
+
+	// RegistryEnabledOrganizations is only relevant when used with RegistryScope in the
+	// "Prefixed" mode, and specifies the organizations which are enabled for createion of
+	// the registry in dedicated namespaces.
+	RegistryEnabledOrganizations []string `json:"registryEnabledOrganizations,omitempty"`
+
+	// RegistryPrefix is only relevant when used with RegistryScope in the
+	// "Prefix" mode, and specifies the prefix to the namespace where the resources for the
+	// enabled organizations should be created in.
+	RegistryPrefix string `json:"registryPrefix,omitempty"`
 
 	// Service is the name of the service offering to bind to.
 	// +kubebuilder:validation:MinLength=1

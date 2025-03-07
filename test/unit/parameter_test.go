@@ -89,6 +89,49 @@ func TestParameters(t *testing.T) {
 	util.MustHaveRegistryEntryWithValue(t, entry, registry.Key(key), value)
 }
 
+// TestParameters tests parameter items are correctly populated by service instance
+// creation.
+func TestParametersWithExplicit(t *testing.T) {
+	defer mustReset(t)
+
+	configuration := fixtures.BasicConfiguration()
+	fixtures.SetRegistry(configuration, key, fixtures.NewParameterPipeline("/animal"))
+	util.MustReplaceBrokerConfig(t, clients, configuration)
+
+	req := fixtures.BasicServiceInstanceCreateExplicitRequest()
+	req.Parameters = &runtime.RawExtension{
+		Raw: []byte(`{"` + key + `":"` + value + `"}`),
+	}
+	util.MustCreateServiceInstanceSuccessfully(t, fixtures.ServiceInstanceName, req)
+
+	entry := util.MustGetRegistryEntry(t, clients, registry.ServiceInstance, fixtures.ServiceInstanceName)
+	util.MustHaveRegistryEntryWithValue(t, entry, registry.Key(key), value)
+}
+
+// TestParameters tests parameter items are correctly populated by service instance
+// creation.
+func TestParametersWithInstanceLocal(t *testing.T) {
+	defer mustReset(t)
+
+	configuration := fixtures.BasicConfiguration()
+	fixtures.SetRegistry(configuration, key, fixtures.NewParameterPipeline("/animal"))
+	util.MustReplaceBrokerConfig(t, clients, configuration)
+
+	req := fixtures.BasicServiceInstanceCreateTenantPrefixedRequest()
+
+	req.Context = &runtime.RawExtension{
+		Raw: []byte(`{"platform":"cloudfoundry", "organization_name":"system"}`),
+	}
+
+	req.Parameters = &runtime.RawExtension{
+		Raw: []byte(`{"` + key + `":"` + value + `"}`),
+	}
+	util.MustCreateServiceInstanceSuccessfully(t, fixtures.ServiceInstanceName, req)
+
+	entry := util.MustGetRegistryEntry(t, clients, registry.ServiceInstance, fixtures.ServiceInstanceName)
+	util.MustHaveRegistryEntryWithValue(t, entry, registry.Key(key), value)
+}
+
 // TestParametersMissingPath tests parameter items are correctly populated by service instance
 // creation.
 func TestParametersMissingPath(t *testing.T) {

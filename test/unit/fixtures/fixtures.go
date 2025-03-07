@@ -56,6 +56,12 @@ const (
 	// BasicConfigurationPlanID2 is the symbolic constant UUID used for the basic configuration plan.
 	BasicConfigurationPlanID2 = `e18fce8d-1f4a-44fa-88c8-e7a52ed50f29`
 
+	// BasicConfigurationPlanID3 is the symbolic constant UUID used for the basic configuration plan.
+	BasicConfigurationPlanID3 = `ffbe9974-8ba9-404b-bae0-3291d3e3a658`
+
+	// BasicConfigurationPlanID4 is the symbolic constant UUID used for the basic configuration plan.
+	BasicConfigurationPlanID4 = `f53c029b-bcdc-4cf3-bcf9-0325816ec9b8`
+
 	// BasicSchemaParameters is a simple schema for use in parameter validation.
 	BasicSchemaParameters = `{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"test":{"type":"number","minimum":1}}}`
 
@@ -117,6 +123,16 @@ var (
 							Name:        "test-plan-2",
 							ID:          BasicConfigurationPlanID2,
 							Description: "another test plan",
+						},
+						{
+							Name:        "test-plan-3",
+							ID:          BasicConfigurationPlanID3,
+							Description: "another test plan with registryscope explicit",
+						},
+						{
+							Name:        "test-plan-4",
+							ID:          BasicConfigurationPlanID4,
+							Description: "another test plan with registryscope InstanceLocal",
 						},
 					},
 				},
@@ -191,6 +207,53 @@ var (
 				Name:    "test-binding-2",
 				Service: "test-offering",
 				Plan:    "test-plan-2",
+				ServiceInstance: v1.ServiceBrokerTemplateList{
+					Registry: []v1.RegistryValue{
+						{
+							Name:  "instance-name",
+							Value: "{{ registry \"" + instanceIDRegistryEntry + "\" }}",
+						},
+					},
+				},
+				ServiceBinding: &v1.ServiceBrokerTemplateList{
+					Registry: []v1.RegistryValue{
+						{
+							Name:  "credentials",
+							Value: "{{ snippet \"" + credentialsSnippetName + "\" }}",
+						},
+					},
+				},
+			},
+			{
+				Name:              "test-binding-3",
+				Service:           "test-offering",
+				Plan:              "test-plan-3",
+				RegistryScope:     v1.RegistryScopeInstanceLocal,
+				RegistryNamespace: "not-sekeletor",
+				ServiceInstance: v1.ServiceBrokerTemplateList{
+					Registry: []v1.RegistryValue{
+						{
+							Name:  "instance-name",
+							Value: "{{ registry \"" + instanceIDRegistryEntry + "\" }}",
+						},
+					},
+				},
+				ServiceBinding: &v1.ServiceBrokerTemplateList{
+					Registry: []v1.RegistryValue{
+						{
+							Name:  "credentials",
+							Value: "{{ snippet \"" + credentialsSnippetName + "\" }}",
+						},
+					},
+				},
+			},
+			{
+				Name:                         "test-binding-4",
+				Service:                      "test-offering",
+				Plan:                         "test-plan-4",
+				RegistryScope:                v1.RegistryScopeTenantPrefixed,
+				RegistryPrefix:               "tnt",
+				RegistryEnabledOrganizations: []string{"system"},
 				ServiceInstance: v1.ServiceBrokerTemplateList{
 					Registry: []v1.RegistryValue{
 						{
@@ -284,6 +347,15 @@ var (
 		PlanID:    BasicConfigurationPlanID,
 	}
 
+	basicServiceInstanceCreateExplicitRequest = api.CreateServiceInstanceRequest{
+		ServiceID: BasicConfigurationOfferingID,
+		PlanID:    BasicConfigurationPlanID3,
+	}
+
+	basicServiceInstanceCreateTenantPrefixedRequest = api.CreateServiceInstanceRequest{
+		ServiceID: BasicConfigurationOfferingID,
+		PlanID:    BasicConfigurationPlanID4,
+	}
 	// basicServiceInstanceUpdateRequest is the absolute minimum valid service instance update
 	// request to use against the basicConfiguration.
 	basicServiceInstanceUpdateRequest = api.UpdateServiceInstanceRequest{
@@ -359,6 +431,14 @@ func BasicServiceBindingCreateRequest() *api.CreateServiceBindingRequest {
 	return basicServiceBindingCreateRequest.DeepCopy()
 }
 
+func BasicServiceInstanceCreateExplicitRequest() *api.CreateServiceInstanceRequest {
+	return basicServiceInstanceCreateExplicitRequest.DeepCopy()
+}
+
+func BasicServiceInstanceCreateTenantPrefixedRequest() *api.CreateServiceInstanceRequest {
+	return basicServiceInstanceCreateTenantPrefixedRequest.DeepCopy()
+}
+
 // BasicResourceStatus returns the templated resource status that will fulfil the
 // readiness checks defined above.  The unstructured application code needs things to
 // be fully unstructured, it's not clever enough to use a raw object type.
@@ -422,13 +502,11 @@ func AddRegistry(spec *v1.ServiceBrokerConfigSpec, name string, expression inter
 	})
 }
 
-var (
-	fixtureGVR = schema.GroupVersionResource{
-		Group:    "",
-		Version:  "v1",
-		Resource: "pods",
-	}
-)
+var fixtureGVR = schema.GroupVersionResource{
+	Group:    "",
+	Version:  "v1",
+	Resource: "pods",
+}
 
 // MustSetFixtureField sets the named field in the fixture Kubernetes resource.
 func MustSetFixtureField(t *testing.T, clients client.Clients, value interface{}, path ...string) {
