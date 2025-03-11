@@ -189,6 +189,16 @@ func MustGetRegistryEntry(t *testing.T, clients client.Clients, rt registry.Type
 	return entry
 }
 
+// MustGetRegistryEntry returns the registry entry for a service instance.
+func MustGetRegistryEntryFromNamespace(t *testing.T, clients client.Clients, rt registry.Type, name string, namespace string) *corev1.Secret {
+	entry, err := clients.Kubernetes().CoreV1().Secrets(namespace).Get(context.TODO(), registry.Name(rt, name), metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return entry
+}
+
 // MustHaveRegistryEntryWithValue checks a registry entry exists.
 func MustHaveRegistryEntryWithValue(t *testing.T, entry *corev1.Secret, key registry.Key, value string) {
 	data, ok := entry.Data[string(key)]

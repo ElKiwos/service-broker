@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/couchbase/service-broker/pkg/api"
+	"github.com/couchbase/service-broker/pkg/apis/servicebroker/v1alpha1"
 	"github.com/couchbase/service-broker/pkg/registry"
 	"github.com/couchbase/service-broker/test/unit/fixtures"
 	"github.com/couchbase/service-broker/test/unit/util"
@@ -78,7 +79,6 @@ func TestParameters(t *testing.T) {
 	configuration := fixtures.BasicConfiguration()
 	fixtures.SetRegistry(configuration, key, fixtures.NewParameterPipeline("/animal"))
 	util.MustReplaceBrokerConfig(t, clients, configuration)
-
 	req := fixtures.BasicServiceInstanceCreateRequest()
 	req.Parameters = &runtime.RawExtension{
 		Raw: []byte(`{"` + key + `":"` + value + `"}`),
@@ -86,6 +86,77 @@ func TestParameters(t *testing.T) {
 	util.MustCreateServiceInstanceSuccessfully(t, fixtures.ServiceInstanceName, req)
 
 	entry := util.MustGetRegistryEntry(t, clients, registry.ServiceInstance, fixtures.ServiceInstanceName)
+	util.MustHaveRegistryEntryWithValue(t, entry, registry.Key(key), value)
+}
+
+// TestParameters tests parameter items are correctly populated by service instance
+// creation.
+func TestParametersWithExplicit(t *testing.T) {
+	defer mustReset(t)
+
+	configuration := fixtures.BasicConfiguration()
+	fixtures.SetRegistry(configuration, key, fixtures.NewParameterPipeline("/animal"))
+	util.MustReplaceBrokerConfig(t, clients, configuration)
+
+	req := fixtures.BasicServiceInstanceCreateExplicitRequest()
+	req.Parameters = &runtime.RawExtension{
+		Raw: []byte(`{"` + key + `":"` + value + `"}`),
+	}
+	util.MustCreateServiceInstanceSuccessfully(t, fixtures.ServiceInstanceName, req)
+
+	entry := util.MustGetRegistryEntry(t, clients, registry.ServiceInstance, fixtures.ServiceInstanceName)
+	util.MustHaveRegistryEntryWithValue(t, entry, registry.Key(key), value)
+}
+
+// TestParameters tests parameter items are correctly populated by service instance
+// creation.
+func TestParametersWithTenantPrefix(t *testing.T) {
+	defer mustReset(t)
+
+	configuration := fixtures.BasicConfiguration()
+	organization_name := "system"
+	fixtures.SetRegistry(configuration, key, fixtures.NewParameterPipeline("/animal"))
+	util.MustReplaceBrokerConfig(t, clients, configuration)
+
+	req := fixtures.BasicServiceInstanceCreateTenantPrefixedRequest()
+
+	req.Context = &runtime.RawExtension{
+		Raw: []byte(`{"platform":"cloudfoundry", "organization_name":"` + organization_name + `"}`),
+	}
+
+	req.Parameters = &runtime.RawExtension{
+		Raw: []byte(`{"` + key + `":"` + value + `"}`),
+	}
+	util.MustCreateServiceInstanceSuccessfully(t, fixtures.ServiceInstanceName, req)
+
+	planName := ""
+
+	for _, plans := range configuration.Catalog.Services[0].Plans {
+		if plans.ID == req.PlanID {
+			planName = plans.Name
+			break
+		}
+	}
+
+	if planName == "" {
+		t.Fatal("Plan name not found")
+	}
+
+	var selectedBinding v1alpha1.ConfigurationBinding
+
+	for _, binding := range configuration.Bindings {
+		if binding.Plan == planName {
+			selectedBinding = binding
+		}
+	}
+	if selectedBinding.Name == "" {
+		t.Fatal("Binding not found")
+	}
+
+	namespace := selectedBinding.RegistryPrefix + organization_name
+
+	entry := util.MustGetRegistryEntryFromNamespace(t, clients, registry.ServiceInstance, fixtures.ServiceInstanceName, namespace)
+
 	util.MustHaveRegistryEntryWithValue(t, entry, registry.Key(key), value)
 }
 

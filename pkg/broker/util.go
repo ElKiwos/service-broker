@@ -379,6 +379,57 @@ func getNamespace(context *runtime.RawExtension, namespace string) (string, erro
 	return namespace, nil
 }
 
+func getContextValue(context *runtime.RawExtension, key string) (string, error) {
+	var ctx interface{}
+
+	if err := json.Unmarshal(context.Raw, &ctx); err != nil {
+		glog.Infof("unmarshal of client context failed: %v", err)
+		return "", err
+	}
+
+	pointer, err := jsonpointer.New("/" + key)
+	if err != nil {
+		glog.Infof("failed to parse JSON pointer: %v", err)
+		return "", err
+	}
+
+	v, _, err := pointer.Get(ctx)
+
+	value, ok := v.(string)
+	if !ok {
+		glog.Infof("request context " + key + " not a string")
+
+		return "", errors.NewParameterError("request context " + key + " not a string")
+	}
+	return value, nil
+}
+
+// getNamespace returns the namespace to provision resources in.  This is the namespace
+// the broker lives in by default, however when operating as a kubernetes cluster service
+// broker then this information is passed as request context.
+func getNamespaceToPrefix(context *runtime.RawExtension) (string, error) {
+	organization_name := ""
+
+	if context != nil {
+
+		platform, err := getContextValue(context, "platform")
+		if err != nil {
+			return "", err
+		}
+		if platform != "cloudfoundry" {
+			return "", errors.NewParameterError("request context does not contain platform=cloudfoundry but " + platform)
+		}
+
+		organization_name, err = getContextValue(context, "organization_name")
+		if err != nil {
+			return "", err
+		}
+
+	}
+
+	return organization_name, nil
+}
+
 // registerDirectoryInstance allows the namespace of the registry to be chosen so garbage
 // collection works as intended.  All service instances get a directory entry for simplicity.
 func registerDirectoryInstance(config *v1.ServiceBrokerConfig, context *runtime.RawExtension, namespace, instanceID, serviceID, planID string) (*registry.DirectoryEntry, error) {
@@ -402,6 +453,32 @@ func registerDirectoryInstance(config *v1.ServiceBrokerConfig, context *runtime.
 		}
 
 		dirent.Namespace = rn
+	case v1.RegistryScopeTenantPrefixed:
+		rn, err := getNamespaceToPrefix(context)
+		if err != nil {
+			return nil, err
+		}
+		prefix := binding.RegistryPrefix
+		if prefix == "" {
+			return nil, errors.NewConfigurationError("RegistryPrefix was not set")
+		}
+
+		enabledOrgs := binding.RegistryEnabledOrganizations
+
+		var ok bool
+
+		for _, val := range enabledOrgs {
+			if val == rn {
+				ok = true
+				break
+			}
+		}
+
+		if !ok {
+			dirent.Namespace = namespace // TODO: Check what namespace is set to ...
+		} else {
+			dirent.Namespace = prefix + rn
+		}
 	default:
 		return nil, errors.NewConfigurationError("unable to resolve registry namespace type %s", binding.RegistryScope)
 	}
