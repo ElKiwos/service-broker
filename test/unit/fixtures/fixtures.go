@@ -252,7 +252,7 @@ var (
 				Service:                      "test-offering",
 				Plan:                         "test-plan-4",
 				RegistryScope:                v1.RegistryScopeTenantPrefixed,
-				RegistryPrefix:               "tnt",
+				RegistryPrefix:               "tnt-",
 				RegistryEnabledOrganizations: []string{"system"},
 				ServiceInstance: v1.ServiceBrokerTemplateList{
 					Registry: []v1.RegistryValue{
@@ -472,11 +472,13 @@ func SetRegistry(spec *v1.ServiceBrokerConfigSpec, name string, expression inter
 		fmt.Println("fail")
 	}
 
-	spec.Bindings[0].ServiceInstance.Registry = []v1.RegistryValue{
-		{
-			Name:  name,
-			Value: `{{` + str + `}}`,
-		},
+	for idx := range spec.Bindings {
+		spec.Bindings[idx].ServiceInstance.Registry = []v1.RegistryValue{
+			{
+				Name:  name,
+				Value: `{{` + str + `}}`,
+			},
+		}
 	}
 }
 

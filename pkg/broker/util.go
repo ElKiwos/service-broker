@@ -470,13 +470,14 @@ func registerDirectoryInstance(config *v1.ServiceBrokerConfig, context *runtime.
 		for _, val := range enabledOrgs {
 			if val == rn {
 				ok = true
+				break
 			}
 		}
 
 		if !ok {
 			dirent.Namespace = namespace // TODO: Check what namespace is set to ...
 		} else {
-			dirent.Namespace = prefix + "-" + rn
+			dirent.Namespace = prefix + rn
 		}
 	default:
 		return nil, errors.NewConfigurationError("unable to resolve registry namespace type %s", binding.RegistryScope)

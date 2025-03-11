@@ -94,8 +94,10 @@ func TestServiceBindingCreateUnbindableService(t *testing.T) {
 
 	configuration := fixtures.BasicConfiguration()
 	configuration.Catalog.Services[0].Bindable = false
-	configuration.Bindings[0].ServiceBinding = nil
-	configuration.Bindings[1].ServiceBinding = nil
+
+	for idx := range configuration.Bindings {
+		configuration.Bindings[idx].ServiceBinding = nil
+	}
 	util.MustReplaceBrokerConfig(t, clients, configuration)
 
 	req := fixtures.BasicServiceInstanceCreateRequest()
