@@ -103,6 +103,7 @@ spec:
                       - Explicit
                       - BrokerLocal
                       - InstanceLocal
+                      - Prefixed
                       type: string
                     service:
                       description: Service is the name of the service offering to
