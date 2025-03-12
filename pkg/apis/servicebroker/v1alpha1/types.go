@@ -267,7 +267,7 @@ type RegistryValue struct {
 }
 
 // RegistryScope allows the user to configure where the registry will be provisioned.
-// +kubebuilder:validation:Enum=Explicit;BrokerLocal;InstanceLocal
+// +kubebuilder:validation:Enum=Explicit;BrokerLocal;InstanceLocal;Prefixed
 type RegistryScope string
 
 const (
