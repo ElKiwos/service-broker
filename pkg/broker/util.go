@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/couchbase/service-broker/pkg/api"
 	v1 "github.com/couchbase/service-broker/pkg/apis/servicebroker/v1alpha1"
@@ -427,7 +428,7 @@ func getNamespaceToPrefix(context *runtime.RawExtension) (string, error) {
 
 	}
 
-	return organization_name, nil
+	return strings.ToLower(organization_name), nil
 }
 
 // registerDirectoryInstance allows the namespace of the registry to be chosen so garbage
@@ -468,14 +469,14 @@ func registerDirectoryInstance(config *v1.ServiceBrokerConfig, context *runtime.
 		var ok bool
 
 		for _, val := range enabledOrgs {
-			if val == rn {
+			if strings.ToLower(val) == rn {
 				ok = true
 				break
 			}
 		}
 
 		if !ok {
-			dirent.Namespace = namespace // TODO: Check what namespace is set to ...
+			dirent.Namespace = namespace
 		} else {
 			dirent.Namespace = prefix + rn
 		}
