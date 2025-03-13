@@ -405,6 +405,35 @@ func getContextValue(context *runtime.RawExtension, key string) (string, error) 
 	return value, nil
 }
 
+func setContextValue(context *runtime.RawExtension, key string, value string) error {
+	var ctx interface{}
+
+	if err := json.Unmarshal(context.Raw, &ctx); err != nil {
+		glog.Infof("unmarshal of client context failed: %v", err)
+		return err
+	}
+
+	pointer, err := jsonpointer.New("/" + key)
+	if err != nil {
+		glog.Infof("failed to parse JSON pointer: %v", err)
+		return err
+	}
+	ctx, err = pointer.Set(ctx, value)
+	if err != nil {
+		return err
+	}
+
+	var bs []byte
+
+	bs, err = json.Marshal(ctx)
+	if err != nil {
+		return err
+	}
+
+	context.Raw = bs
+	return nil
+}
+
 // getNamespace returns the namespace to provision resources in.  This is the namespace
 // the broker lives in by default, however when operating as a kubernetes cluster service
 // broker then this information is passed as request context.
@@ -425,7 +454,6 @@ func getNamespaceToPrefix(context *runtime.RawExtension) (string, error) {
 		if err != nil {
 			return "", err
 		}
-
 	}
 
 	return strings.ToLower(organization_name), nil
@@ -480,6 +508,7 @@ func registerDirectoryInstance(config *v1.ServiceBrokerConfig, context *runtime.
 		} else {
 			dirent.Namespace = prefix + rn
 		}
+		setContextValue(context, "namespace", dirent.Namespace)
 	default:
 		return nil, errors.NewConfigurationError("unable to resolve registry namespace type %s", binding.RegistryScope)
 	}
