@@ -78,12 +78,14 @@ spec:
                         RegistryNamespace is only relevant when used with RegistryScope in the
                         "Explicit" mode, and specifies the exact namespace a service instance
                         registry will be generated in.
+                      minLength: 1
                       type: string
                     registryPrefix:
                       description: |-
                         RegistryPrefix is only relevant when used with RegistryScope in the
                         "Prefix" mode, and specifies the prefix to the namespace where the resources for the
                         enabled organizations should be created in.
+                      minLength: 1
                       type: string
                     registryScope:
                       default: BrokerLocal

@@ -310,6 +310,7 @@ type ConfigurationBinding struct {
 	// RegistryNamespace is only relevant when used with RegistryScope in the
 	// "Explicit" mode, and specifies the exact namespace a service instance
 	// registry will be generated in.
+	// +kubebuilder:validation:MinLength=1
 	RegistryNamespace string `json:"registryNamespace,omitempty"`
 
 	// RegistryEnabledOrganizations is only relevant when used with RegistryScope in the
@@ -320,6 +321,7 @@ type ConfigurationBinding struct {
 	// RegistryPrefix is only relevant when used with RegistryScope in the
 	// "Prefix" mode, and specifies the prefix to the namespace where the resources for the
 	// enabled organizations should be created in.
+	// +kubebuilder:validation:MinLength=1
 	RegistryPrefix string `json:"registryPrefix,omitempty"`
 
 	// Service is the name of the service offering to bind to.
